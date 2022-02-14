@@ -1,15 +1,19 @@
 use league_client_connector::LeagueClientConnector;
-use league_client_connector::RiotLockFile;
-use websocket::futures::Sink;
-use websocket::futures::Stream;
-use websocket::{Message, OwnedMessage};
-use websocket::futures::Future;
+use std::thread;
+use websocket::{OwnedMessage};
+use serde_json::{Map, Value};
 
-struct LeagueState(RiotLockFile);
+
+#[derive(Clone, serde::Serialize)]
+struct LeagueEvent {
+  uri: String,
+  event_type: String,
+  data: Value,
+}
 
 
 #[tauri::command]
-fn connect() -> () {
+async fn connect(window: tauri::Window) -> () {
   // TODO: I don't understand Rust error handling.
   // I *think* you are supposed to define like a custom error enum (https://doc.rust-lang.org/rust-by-example/error/multiple_error_types/define_error_type.html)
   // But I can't figure out how tauri wants this to work
@@ -18,12 +22,13 @@ fn connect() -> () {
 
   println!("Lockfile: {:?}", lockfile);
 
-  let mut headers = websocket::header::Headers::new();
-
-  println!("Headers: {:?}", headers);
-
   let url = "wss://".to_owned() + &lockfile.username + ":" + &lockfile.password + "@" + &lockfile.address + ":" + &lockfile.port.to_string() + "/";
   println!("Connecting to {:?}", url);
+
+
+  let headers = websocket::header::Headers::new();
+
+  println!("Headers: {:?}", headers);
 
   let mut client = websocket::ClientBuilder::new(&url)
     .unwrap()
@@ -32,7 +37,40 @@ fn connect() -> () {
     .connect_secure(Some(websocket::native_tls::TlsConnector::builder()
       .danger_accept_invalid_certs(true)
       .min_protocol_version(Some(websocket::native_tls::Protocol::Tlsv12))
-      .build().unwrap()));
+      .build().unwrap()))
+    .unwrap();
+
+    
+
+  println!("Connected");
+    
+  client.send_message(&OwnedMessage::Text("[5,\"OnJsonApiEvent\"]".to_owned())).unwrap();
+  thread::spawn(move || {
+    loop {
+      let message = client.recv_message().unwrap();
+      match message {
+        OwnedMessage::Text(ref t) => {
+          let parsed : Value = serde_json::from_str(&t).unwrap();
+          if parsed[0].as_i64().unwrap() == 8
+          {
+            let body = parsed[2].as_object().unwrap();
+            let data = body["data"].to_owned();
+            let event_type = body["eventType"].as_str().unwrap().to_owned();
+            let uri = body["uri"].as_str().unwrap().to_owned();
+            window.emit("league-event", LeagueEvent { data, event_type, uri }).unwrap();
+          }
+          else
+          {
+            println!("Non-Event message: {:?}", message);
+          }
+        },
+        _ => {
+          println!("Weird message {:?}", message);
+        },
+      }
+    }
+  });
+
 
   // TODO: Figure this out
   // There is no way to split a TlsStream, so the below isn't posssible.

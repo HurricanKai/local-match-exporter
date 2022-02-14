@@ -1,7 +1,6 @@
 <script>
-    import { emit, listen } from '@tauri-apps/api/event'
     import { invoke } from '@tauri-apps/api/tauri'
-    import ConnectionIndicator from '$lib/components/ConnectionIndicator.svelte';
+    import { appWindow } from '@tauri-apps/api/window'
 
     /**
 * @param {any} _e
@@ -10,10 +9,17 @@
     {
         invoke('connect')
     }
+
+    let arr = []
+    appWindow.listen('league-event', (e) => {
+        arr = [...arr, e.payload]
+        console.log(e)
+    })
 </script>
 
 
-<div class="w-60">
-    <button on:click={fireConnect}>Connect!</button>
-    <ConnectionIndicator state=1/>
-</div>
+<button on:click={fireConnect}>Connect!</button>
+
+{#each arr as el}
+    <li>{el.uri} | {JSON.stringify(el.data)}</li>
+{/each}

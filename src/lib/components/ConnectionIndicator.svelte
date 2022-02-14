@@ -1,17 +1,14 @@
-<script>
+<script lang="ts">
     import ConnectionDot from "./ConnectionDot.svelte";
 
-    export let state = 0;
+    export let state : Number = 0;
 
-    /**
-* @param {number} state
-*/
-    function getStateText(state) {
-        switch (state) {
-            case 0: return "Disconnected";
-            case 1: return "Connecting";
-            case 2: return "Connected";
-        }
+    function getStateText(state : Number) : String {
+        if (state == 0) return "Disconnected";
+        if (state == 1) return "Connecting";
+        if (state == 2) return "Connected";
+        console.log(state);
+        return "ERROR_INVALID_STATE";
     }
 
     $: text = getStateText(state); 
@@ -35,6 +32,10 @@
 
     .right {
         @apply inline-block col-span-2;
+    }
+
+    .right span {
+        @apply text-center
     }
 
     .left {

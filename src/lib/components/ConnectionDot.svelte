@@ -1,14 +1,15 @@
-<script>
+<script lang="ts">
     import { Rive, Layout, Fit } from "@rive-app/webgl";
 	import { onMount } from 'svelte';
 
-    export let state = 0;
+    export let state : Number = 0;
     let inputState;
+    let canvas;
 
     onMount(() => {
         let dot = new Rive({
             src: '/connection_dot.riv',
-            canvas: document.getElementById("canvas"),
+            canvas: canvas,
             autoplay: true,
             stateMachines: 'State Machine 1',
             layout: new Layout({
@@ -28,11 +29,11 @@
 </script>
 
 <div>
-    <canvas id="canvas"></canvas>
+    <canvas bind:this={canvas}></canvas>
 </div>
 
 <style>
-    #canvas {
+    canvas {
         width:100%;
         height:100%;
     }
