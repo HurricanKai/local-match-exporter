@@ -1,7 +1,8 @@
 const path = require('path');
 
 module.exports = {
-  stories: ['../src/lib/components/**/*.stories.js'],
+  stories: ['../src/lib/components/**/*.stories.svelte'],
+  staticDirs: ['../static'],
   addons: [
     '@storybook/addon-links',
     '@storybook/addon-essentials',
